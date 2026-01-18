@@ -84,6 +84,12 @@ button {
 
 <div id="inventory">Ekwipunek: brak</div>
 <div id="history">Historia losowań:</div>
+<div id="yourStats" style="position:fixed; top:20px; right:20px; width:200px; background-color:#222; padding:10px; border-radius:10px; text-align:left;">
+  <h3>Your Stats</h3>
+  <div>Total Rolls: <span id="totalRolls">0</span></div>
+  <div>Total Stats Count: <span id="totalStatsCount">0</span></div>
+  <div>Total Playtime: <span id="totalPlaytime">0s</span></div>
+</div>
 
 <audio id="backgroundMusic" loop></audio>
 
@@ -110,6 +116,10 @@ let inventory = JSON.parse(localStorage.getItem('inventory'))||[];
 let historyData = JSON.parse(localStorage.getItem('historyData'))||{};
 let cooldown = parseInt(localStorage.getItem('cooldown'))||2000; // ms
 let lastRoll = 0;
+let totalRolls = 0;
+let totalStatsCount = 0;
+let startTime = Date.now(); // czas rozpoczęcia sesji
+
 
 // ===== FUNKCJE =====
 function updateUI(){
@@ -184,6 +194,14 @@ function rollRNG(){
       imgElem.style.transform='scale(1) rotate(0deg)';
       imgElem.style.filter='brightness(1)';
       updateUI();
+      // ===== AKTUALIZACJA STATYSTYK =====
+totalRolls++; // zwiększamy licznik wszystkich rolli
+totalStatsCount += Math.round(1/selected.chance); // suma „1/chance”
+
+// aktualizacja widoku w HTML
+document.getElementById('totalRolls').textContent = totalRolls;
+document.getElementById('totalStatsCount').textContent = totalStatsCount;
+
     }
   },animSpeed);
 }
@@ -237,6 +255,14 @@ document.getElementById('buyItem').addEventListener('click',()=>{
 // ===== ODŚWIEŻANIE COOLDOWN =====
 setInterval(showCooldown,100);
 updateUI();
+function updatePlaytime(){
+  const now = Date.now();
+  const elapsed = Math.floor((now - startTime)/1000); // sekundy
+  document.getElementById('totalPlaytime').textContent = `${elapsed}s`;
+}
+
+setInterval(updatePlaytime, 1000); // odświeżanie co sekundę
+
 </script>
 </body>
 </html>
