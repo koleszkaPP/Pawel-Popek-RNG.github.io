@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Paweł RNG</title>
+<title>Paweł RNG - Mega Slot Edition</title>
 <style>
 body {
   font-family: Arial, sans-serif;
@@ -79,9 +79,11 @@ button {
   <button class="upgradeButton" id="shortenCooldown">Skróć cooldown (50 monet)</button>
   <button class="upgradeButton" id="removeCooldown">Usuń cooldown (2000 monet)</button>
   <button class="upgradeButton" id="increaseChances">Ulepszenie szans (100 monet)</button>
+  <button class="upgradeButton" id="buyItem">Kup przedmiot (100 monet)</button>
+</div>
 
+<div id="inventory">Ekwipunek: brak</div>
 <div id="history">Historia losowań:</div>
- <div id="inventory">Ekwipunek: brak</div>
 
 <audio id="backgroundMusic" loop>
   <source src="music.mp3" type="audio/mpeg">
@@ -139,7 +141,7 @@ function rollRNG(){
   const entries=[];
   images.forEach(img=>{
     let count=Math.floor(img.chance*256);
-    if(inventory.length>0) count=Math.floor(count*1.05*count/Math.max(count,1)); 
+    if(inventory.length>0) count=Math.floor(count * 1.05);
     for(let i=0;i<count;i++) entries.push(img);
   });
 
@@ -155,7 +157,7 @@ function rollRNG(){
     const temp=images[Math.floor(Math.random()*images.length)];
     imgElem.src=temp.src;
     textElem.textContent=temp.text;
-    chanceElem.textContent=`Szansa: 1/${1/temp.chance}`;
+    chanceElem.textContent=`Szansa: 1/${Math.round(1/temp.chance)}`;
     rarityElem.textContent=`Rzadkość: ${temp.rarity}`;
 
     // Mega efekt dla rzadkich
@@ -170,11 +172,10 @@ function rollRNG(){
     elapsed+=animSpeed;
     if(elapsed>=totalDuration){
       clearInterval(interval);
-      // Właściwy wybór
       const selected=entries[Math.floor(Math.random()*entries.length)];
       imgElem.src=selected.src;
       textElem.textContent=selected.text;
-      chanceElem.textContent=`Szansa: 1/${1/selected.chance}`;
+      chanceElem.textContent=`Szansa: 1/${Math.round(1/selected.chance)}`;
       rarityElem.textContent=`Rzadkość: ${selected.rarity}`;
       let reward=selected.reward;
       if(inventory.length>0) reward=Math.floor(reward*(1+0.05*inventory.length));
@@ -202,7 +203,7 @@ document.getElementById('muteButton').addEventListener('click',()=>{ bgMusic.mut
 function playRandomMusic(){
   const randomMusic=musicFiles[Math.floor(Math.random()*musicFiles.length)];
   bgMusic.src=randomMusic;
-  bgMusic.play();
+  bgMusic.play().catch(err=>console.log("Błąd odtwarzania muzyki:",err));
 }
 
 // ---- ULEPSZENIA ----
@@ -218,7 +219,7 @@ document.getElementById('removeCooldown').addEventListener('click',()=>{
 });
 
 document.getElementById('increaseChances').addEventListener('click',()=>{
-  if(coins>=100){ coins-=100; images.forEach(img=>{ img.chance*=1.05 }); updateUI(); alert('Szanse nieco ulepszone!');}
+  if(coins>=100){ coins-=100; images.forEach(img=>{ img.chance=Math.round(img.chance*1.05*1000)/1000 }); updateUI(); alert('Szanse nieco ulepszone!');}
   else alert('Nie masz wystarczająco monet!');
 });
 
