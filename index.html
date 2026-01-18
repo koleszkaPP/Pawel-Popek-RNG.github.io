@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Paweł RNG</title>
+<title>Paweł RNG - Gra</title>
 <style>
   body {
     font-family: Arial, sans-serif;
@@ -15,24 +15,32 @@
   }
 
   h1 {
-    margin-top: 50px;
+    margin-top: 30px;
     font-size: 2em;
   }
 
-  #rollButton {
-    padding: 20px 40px;
-    font-size: 1.5em;
-    margin: 20px;
+  #rollButton, #muteButton {
+    padding: 15px 30px;
+    font-size: 1.2em;
+    margin: 10px;
     cursor: pointer;
-    transition: transform 0.2s;
     border: none;
     border-radius: 10px;
+    transition: transform 0.2s;
+  }
+
+  #rollButton {
     background-color: #4CAF50;
     color: white;
   }
 
   #rollButton:active {
     transform: scale(0.9);
+  }
+
+  #muteButton {
+    background-color: #f44336;
+    color: white;
   }
 
   #resultImage {
@@ -53,14 +61,22 @@
     font-size: 1.2em;
   }
 
-  #muteButton {
-    padding: 10px 20px;
-    margin: 10px;
-    cursor: pointer;
-    border: none;
+  #currency {
+    margin-top: 20px;
+    font-size: 1.3em;
+  }
+
+  #upgrades {
+    margin-top: 20px;
+    font-size: 1em;
+  }
+
+  #upgrades button {
+    margin: 5px;
+    padding: 10px;
+    font-size: 0.9em;
     border-radius: 5px;
-    background-color: #f44336;
-    color: white;
+    cursor: pointer;
   }
 </style>
 </head>
@@ -77,65 +93,121 @@
 
 <button id="muteButton">Mute/Unmute</button>
 
-<audio id="backgroundMusic" loop autoplay>
+<div id="currency">Monety: <span id="coins">0</span></div>
+
+<div id="upgrades">
+  <h2>Sklep i ulepszenia</h2>
+  <button id="shortenCooldown">Skróć cooldown (50 monet)</button>
+  <button id="buyItem">Kup przedmiot (100 monet)</button>
+  <div id="inventory">Ekwipunek: brak</div>
+</div>
+
+<audio id="backgroundMusic" loop>
   <source src="music.mp3" type="audio/mpeg">
-  Twoja przeglądarka nie wspiera odtwarzania audio.
 </audio>
 
 <script>
+// ---- DANE OBRAZKÓW ----
 const images = [
-  {src: 'photo.png', text: 'gejmingowy paweł', chance: 1/2, rarity: 'Common'},
-  {src: 'photo2.png', text: 'paweł prezydent', chance: 1/4, rarity: 'Uncommon'},
-  {src: 'photo3.png', text: 'pawel w zoltym hoodie', chance: 1/8, rarity: 'Rare'},
-  {src: 'photo4.png', text: 'funni paweł', chance: 1/16, rarity: 'Epic'},
-  {src: 'photo5.png', text: 'paweł ok', chance: 1/32, rarity: 'Mythic'},
-  {src: 'photo6.png', text: 'świąteczny paweł', chance: 1/64, rarity: 'Legendary'},
-  {src: 'photo7.png', text: 'paweł dostaje backshoty', chance: 1/128, rarity: 'Ultra Legendary'},
-  {src: 'photo8.png', text: 'paweł komunista', chance: 1/256, rarity: 'Ultra Legendary'}
+  {src: 'photo.png', text: 'gejmingowy paweł', chance: 1/2, rarity: 'Common', reward: 1},
+  {src: 'photo2.png', text: 'paweł prezydent', chance: 1/4, rarity: 'Uncommon', reward: 5},
+  {src: 'photo3.png', text: 'pawel w zoltym hoodie', chance: 1/8, rarity: 'Rare', reward: 10},
+  {src: 'photo4.png', text: 'funni paweł', chance: 1/16, rarity: 'Epic', reward: 20},
+  {src: 'photo5.png', text: 'paweł ok', chance: 1/32, rarity: 'Mythic', reward: 40},
+  {src: 'photo6.png', text: 'świąteczny paweł', chance: 1/64, rarity: 'Legendary', reward: 80},
+  {src: 'photo7.png', text: 'paweł dostaje backshoty', chance: 1/128, rarity: 'Ultra Legendary', reward: 160},
+  {src: 'photo8.png', text: 'paweł komunista', chance: 1/256, rarity: 'Ultra Legendary', reward: 320}
 ];
 
+// ---- MUZYKA ----
 const musicFiles = ['music.mp3', 'music2.mp3', 'music3.mp3', 'music4.mp3', 'music5.mp3'];
 const bgMusic = document.getElementById('backgroundMusic');
+let musicStarted = false;
 
-// Włącz/wyłącz dźwięk
-document.getElementById('muteButton').addEventListener('click', () => {
-  bgMusic.muted = !bgMusic.muted;
-});
+// ---- SYSTEM WALUT I EKWIPUNKU ----
+let coins = 0;
+let inventory = [];
+let cooldown = 2000; // 2 sekundy
+let lastRoll = 0;
 
-// Funkcja RNG z proporcjonalną szansą
+// ---- FUNKCJE ----
 function rollRNG() {
+  const now = Date.now();
+  if (now - lastRoll < cooldown) {
+    alert(`Odczekaj jeszcze ${(cooldown - (now - lastRoll))/1000} sekund!`);
+    return;
+  }
+  lastRoll = now;
+
   // Tworzymy pulę do losowania
   const pool = [];
   images.forEach(img => {
-    const entries = Math.floor(img.chance * 256); // 1/2 -> 128
+    const entries = Math.floor(img.chance * 256);
     for (let i = 0; i < entries; i++) pool.push(img);
   });
 
-  // Losowy wybór
   const selected = pool[Math.floor(Math.random() * pool.length)];
 
+  // Wyświetl obrazek i dane
   document.getElementById('resultImage').src = selected.src;
   document.getElementById('resultText').textContent = selected.text;
   document.getElementById('chanceText').textContent = `Szansa: 1/${1/selected.chance}`;
   document.getElementById('rarityText').textContent = `Rzadkość: ${selected.rarity}`;
+
+  // Dodajemy nagrodę
+  coins += selected.reward;
+  document.getElementById('coins').textContent = coins;
 }
 
-// Przycisk Roll
+// ---- PRZYCISK ROLL ----
 document.getElementById('rollButton').addEventListener('click', () => {
+  if (!musicStarted) {
+    playRandomMusic();
+    musicStarted = true;
+  }
   const btn = document.getElementById('rollButton');
   btn.style.transform = 'scale(0.8)';
   setTimeout(() => btn.style.transform = 'scale(1)', 250);
   rollRNG();
 });
 
-// Losowa muzyka na start
+// ---- PRZYCISK MUTE ----
+document.getElementById('muteButton').addEventListener('click', () => {
+  bgMusic.muted = !bgMusic.muted;
+});
+
+// ---- LOSOWA MUZYKA ----
 function playRandomMusic() {
   const randomMusic = musicFiles[Math.floor(Math.random() * musicFiles.length)];
   bgMusic.src = randomMusic;
   bgMusic.play();
 }
 
-playRandomMusic();
+// ---- SKLEP / ULEPSZENIA ----
+document.getElementById('shortenCooldown').addEventListener('click', () => {
+  if (coins >= 50 && cooldown > 500) {
+    coins -= 50;
+    cooldown -= 500; // skraca cooldown o 0.5s
+    document.getElementById('coins').textContent = coins;
+    alert(`Cooldown skrócony! Teraz wynosi ${(cooldown/1000).toFixed(1)} sekund`);
+  } else if (cooldown <= 500) {
+    alert('Cooldown już minimalny!');
+  } else {
+    alert('Nie masz wystarczająco monet!');
+  }
+});
+
+document.getElementById('buyItem').addEventListener('click', () => {
+  if (coins >= 100) {
+    coins -= 100;
+    inventory.push('Tajemniczy Przedmiot');
+    document.getElementById('coins').textContent = coins;
+    document.getElementById('inventory').textContent = `Ekwipunek: ${inventory.join(', ')}`;
+    alert('Przedmiot dodany do ekwipunku!');
+  } else {
+    alert('Nie masz wystarczająco monet!');
+  }
+});
 </script>
 
 </body>
