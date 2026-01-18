@@ -85,9 +85,7 @@ button {
 <div id="inventory">Ekwipunek: brak</div>
 <div id="history">Historia losowań:</div>
 
-<audio id="backgroundMusic" loop>
-  <source src="music.mp3" type="audio/mpeg">
-</audio>
+<audio id="backgroundMusic" loop></audio>
 
 <script>
 // ===== DANE =====
@@ -110,16 +108,18 @@ let musicStarted = false;
 let coins = parseInt(localStorage.getItem('coins'))||0;
 let inventory = JSON.parse(localStorage.getItem('inventory'))||[];
 let historyData = JSON.parse(localStorage.getItem('historyData'))||{};
-let cooldown = parseInt(localStorage.getItem('cooldown'))||2000;
+let cooldown = parseInt(localStorage.getItem('cooldown'))||2000; // ms
 let lastRoll = 0;
 
 // ===== FUNKCJE =====
 function updateUI(){
-  document.getElementById('coins').textContent=coins;
-  document.getElementById('inventory').textContent=inventory.length?`Ekwipunek: ${inventory.join(', ')}`:'Ekwipunek: brak';
+  document.getElementById('coins').textContent = coins;
+  document.getElementById('inventory').textContent = inventory.length?`Ekwipunek: ${inventory.join(', ')}`:'Ekwipunek: brak';
   let historyHTML='';
-  for(const[key,val] of Object.entries(historyData)){ historyHTML+=`${key} (x${val})<br>`;}
-  document.getElementById('history').innerHTML=historyHTML||'Historia losowań: brak';
+  for(const[key,val] of Object.entries(historyData)){
+    historyHTML+=`${key} (x${val})<br>`;
+  }
+  document.getElementById('history').innerHTML = historyHTML||'Historia losowań: brak';
   localStorage.setItem('coins',coins);
   localStorage.setItem('inventory',JSON.stringify(inventory));
   localStorage.setItem('historyData',JSON.stringify(historyData));
@@ -140,8 +140,8 @@ function rollRNG(){
 
   const entries=[];
   images.forEach(img=>{
-    let count=Math.floor(img.chance*256);
-    if(inventory.length>0) count=Math.floor(count * 1.05);
+    let count = Math.floor(img.chance*256);
+    if(inventory.length>0) count=Math.floor(count*1.05);
     for(let i=0;i<count;i++) entries.push(img);
   });
 
@@ -160,7 +160,6 @@ function rollRNG(){
     chanceElem.textContent=`Szansa: 1/${Math.round(1/temp.chance)}`;
     rarityElem.textContent=`Rzadkość: ${temp.rarity}`;
 
-    // Mega efekt dla rzadkich
     if(temp.rarity!=='Common' && temp.rarity!=='Uncommon'){
       imgElem.style.transform=`scale(${1+Math.random()*0.2}) rotate(${(Math.random()-0.5)*20}deg)`;
       imgElem.style.filter=`brightness(${1+Math.random()*0.5})`;
@@ -189,24 +188,31 @@ function rollRNG(){
   },animSpeed);
 }
 
-// ===== PRZYCISKI =====
-document.getElementById('rollButton').addEventListener('click',()=>{
-  if(!musicStarted){ playRandomMusic(); musicStarted=true;}
-  const btn=document.getElementById('rollButton');
-  btn.style.transform='scale(0.8)';
-  setTimeout(()=>btn.style.transform='scale(1)',250);
-  rollRNG();
+// ===== ROLL BUTTON + MUZYKA =====
+document.getElementById('rollButton').addEventListener('click', async () => {
+    if(!musicStarted){
+        const randomMusic = musicFiles[Math.floor(Math.random()*musicFiles.length)];
+        bgMusic.src = randomMusic;
+        try{
+            await bgMusic.play();
+            musicStarted = true;
+            console.log("Muzyka działa!");
+        }catch(err){
+            console.log("Nie udało się odtworzyć muzyki:", err);
+        }
+    }
+
+    const btn=document.getElementById('rollButton');
+    btn.style.transform='scale(0.8)';
+    setTimeout(()=>btn.style.transform='scale(1)',250);
+
+    rollRNG();
 });
 
+// ===== MUTE =====
 document.getElementById('muteButton').addEventListener('click',()=>{ bgMusic.muted=!bgMusic.muted; });
 
-function playRandomMusic(){
-  const randomMusic=musicFiles[Math.floor(Math.random()*musicFiles.length)];
-  bgMusic.src=randomMusic;
-  bgMusic.play().catch(err=>console.log("Błąd odtwarzania muzyki:",err));
-}
-
-// ---- ULEPSZENIA ----
+// ===== ULEPSZENIA =====
 document.getElementById('shortenCooldown').addEventListener('click',()=>{
   if(coins>=50 && cooldown>500){ coins-=50; cooldown-=500; updateUI(); alert(`Cooldown skrócony! Teraz ${(cooldown/1000).toFixed(1)}s`);}
   else if(cooldown<=500) alert('Cooldown już minimalny!');
@@ -231,7 +237,6 @@ document.getElementById('buyItem').addEventListener('click',()=>{
 // ===== ODŚWIEŻANIE COOLDOWN =====
 setInterval(showCooldown,100);
 updateUI();
-
 </script>
 </body>
 </html>
